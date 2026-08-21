@@ -1,0 +1,5 @@
+venv/
+.env
+signal.json
+__pycache__/
+*.pyc

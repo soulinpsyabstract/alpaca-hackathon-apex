@@ -97,24 +97,41 @@ def get_bars(symbol: str, timeframe: str = "15Min", limit: int = 50):
 
 
 @app.post("/tools/place_order")
-def place_order(symbol: str, qty: float, side: str):
+def place_order(symbol: str, qty: float, side: str, stop_price: float = None):
     """
     Places a market order — matches strategy_prompt.md: "Market orders (no limit
     order games)". side must be "buy" or "sell".
-    Example: POST /tools/place_order?symbol=SPY&qty=1&side=buy
+
+    stop_price (optional): if provided, attaches a real stop-loss to the order
+    via Alpaca's bracket order class, matching strategy_prompt.md's
+    "Stop loss: VWAP ± 1 ATR" rule. Pass the actual stop price you calculated
+    (e.g. VWAP - 1*ATR for a long, VWAP + 1*ATR for a short).
+
+    Example: POST /tools/place_order?symbol=SPY&qty=1&side=buy&stop_price=418.50
     """
     side = side.lower()
     if side not in ("buy", "sell"):
         raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
 
+    if qty <= 0:
+        raise HTTPException(status_code=400, detail="qty must be greater than 0")
+
+    order_kwargs = {
+        "symbol": symbol,
+        "qty": qty,
+        "side": side,
+        "type": "market",
+        "time_in_force": "day",
+    }
+
+    if stop_price is not None:
+        if stop_price <= 0:
+            raise HTTPException(status_code=400, detail="stop_price must be greater than 0")
+        order_kwargs["order_class"] = "bracket"
+        order_kwargs["stop_loss"] = {"stop_price": stop_price}
+
     try:
-        order = api.submit_order(
-            symbol=symbol,
-            qty=qty,
-            side=side,
-            type="market",
-            time_in_force="day",
-        )
+        order = api.submit_order(**order_kwargs)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
 
@@ -125,6 +142,7 @@ def place_order(symbol: str, qty: float, side: str):
         "side": order.side,
         "type": order.type,
         "status": order.status,
+        "stop_price": stop_price,
     }
 
 

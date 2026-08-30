@@ -17,9 +17,6 @@ ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY", "")
 ALPACA_BASE_URL = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
 SIGNAL_FILE = Path(__file__).parent / "signal.json"
 
-if not ALPACA_API_KEY or not ALPACA_SECRET_KEY:
-    print("[bot_mcp] ALPACA_API_KEY / ALPACA_SECRET_KEY missing — fill in .env (see .env.example)")
-    sys.exit(1)
 
 from alpaca_trade_api import REST  # noqa: E402
 

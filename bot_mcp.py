@@ -318,3 +318,8 @@ def read_root():
 # Mount static assets compiled by Vite
 if os.path.exists('dashboard/dist/assets'):
     app.mount('/assets', StaticFiles(directory='dashboard/dist/assets'), name='assets')
+
+
+@app.get('/debug_env')
+def debug_env():
+    return {k: 'SET' for k in os.environ.keys() if 'ALPACA' in k or 'APCA' in k}

@@ -33,7 +33,8 @@ def get_api():
 # get_option_contracts, no options order path. alpaca-py (TradingClient) is
 # Alpaca's current SDK and does support it, so it's used for options only,
 # alongside the legacy client for everything equities-related.
-trading_client = TradingClient(ALPACA_API_KEY, ALPACA_SECRET_KEY, paper=True)
+def get_trading_client():
+    return TradingClient(ALPACA_API_KEY, ALPACA_SECRET_KEY, paper=True)
 
 app = FastAPI(title="alpaca-mcp-bot")
 
@@ -201,7 +202,7 @@ def get_option_contracts(
             strike_price_lte=str(strike_price_lte) if strike_price_lte is not None else None,
             limit=limit,
         )
-        response = trading_client.get_option_contracts(request)
+        response = get_trading_client().get_option_contracts(request)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
 
@@ -244,7 +245,7 @@ def place_option_order(symbol: str, qty: int, side: str):
     )
 
     try:
-        order = trading_client.submit_order(order_data=order_request)
+        order = get_trading_client().submit_order(order_data=order_request)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
 

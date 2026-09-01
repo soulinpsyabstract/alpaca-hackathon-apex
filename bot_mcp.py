@@ -297,3 +297,8 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000, ws="none")
+
+
+@app.get('/')
+def read_root():
+    return {'status': 'online', 'system': 'Apex Cyber', 'message': 'Trading Bot Active'}

@@ -1,3 +1,10 @@
+import os
+if os.getenv('ALPACA_API_KEY') and not os.getenv('APCA_API_KEY_ID'):
+    os.environ['APCA_API_KEY_ID'] = os.getenv('ALPACA_API_KEY')
+if os.getenv('ALPACA_SECRET_KEY') and not os.getenv('APCA_API_SECRET_KEY'):
+    os.environ['APCA_API_SECRET_KEY'] = os.getenv('ALPACA_SECRET_KEY')
+if os.getenv('ALPACA_BASE_URL') and not os.getenv('APCA_API_BASE_URL'):
+    os.environ['APCA_API_BASE_URL'] = os.getenv('ALPACA_BASE_URL')
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 """

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
@@ -23,7 +24,9 @@ from alpaca.trading.client import TradingClient  # noqa: E402
 from alpaca.trading.requests import GetOptionContractsRequest, MarketOrderRequest  # noqa: E402
 from alpaca.trading.enums import ContractType, OrderSide, TimeInForce  # noqa: E402
 
-api = REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL)
+def get_api():
+    """Lazy load API only when needed"""
+    return REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL)
 
 # Options trading is required by the hackathon rules across all 4 tracks, and
 # alpaca_trade_api (legacy REST above) has no options support at all -- no
@@ -34,11 +37,19 @@ trading_client = TradingClient(ALPACA_API_KEY, ALPACA_SECRET_KEY, paper=True)
 
 app = FastAPI(title="alpaca-mcp-bot")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/tools/get_account")
 def get_account():
     try:
-        account = api.get_account()
+        account = get_api().get_account()
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
 
@@ -54,7 +65,7 @@ def get_account():
 @app.get("/tools/get_positions")
 def get_positions():
     try:
-        positions = api.list_positions()
+        positions = get_api().list_positions()
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
 
@@ -82,7 +93,7 @@ def get_bars(symbol: str, timeframe: str = "15Min", limit: int = 50):
     Valid timeframes: 1Min, 5Min, 15Min, 1Hour, 1Day
     """
     try:
-        bars = api.get_bars(symbol, timeframe, limit=limit)
+        bars = get_api().get_bars(symbol, timeframe, limit=limit)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
 
@@ -142,7 +153,7 @@ def place_order(symbol: str, qty: float, side: str, stop_price: float = None):
         order_kwargs["stop_loss"] = {"stop_price": stop_price}
 
     try:
-        order = api.submit_order(**order_kwargs)
+        order = get_api().submit_order(**order_kwargs)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
 
@@ -254,7 +265,7 @@ def cancel_order(order_id: str):
     Example: POST /tools/cancel_order?order_id=abc123
     """
     try:
-        api.cancel_order(order_id)
+        get_api().cancel_order(order_id)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
 

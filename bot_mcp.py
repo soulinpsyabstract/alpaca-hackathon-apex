@@ -1,6 +1,20 @@
 import os
 from pathlib import Path
 
+# Explicit paper credentials & URL mapping
+os.environ['APCA_API_KEY_ID'] = 'PKGP4XGJIJDPNBPULNAWJODBAP'.strip()
+os.environ['APCA_API_SECRET_KEY'] = 'FZ7g7rWBKriFVHTBKo3NhY4zNNgKUK18odrfgLRA3fWz'.strip()
+os.environ['APCA_API_BASE_URL'] = 'https://paper-api.alpaca.markets'
+
+ALPACA_API_KEY = os.environ['APCA_API_KEY_ID']
+ALPACA_SECRET_KEY = os.environ['APCA_API_SECRET_KEY']
+ALPACA_BASE_URL = os.environ['APCA_API_BASE_URL']
+
+SIGNAL_FILE = Path(__file__).parent / 'signal.json'
+
+import os
+from pathlib import Path
+
 # Fix environment variable mappings and fallback to hardcoded paper keys
 ALPACA_API_KEY = os.environ.get("ALPACA_API_KEY") or os.environ.get("APCA_API_KEY_ID") or "PKGP4XGJIJDPNBPULNAWJODBAP"
 ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("APCA_API_SECRET_KEY") or "FZ7g7rWBKriFVHTBKo3NhY4zNNgKUK18odrfgLRA3fWz"

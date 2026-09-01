@@ -1,4 +1,18 @@
 import os
+from pathlib import Path
+
+# Fix environment variable mappings and fallback to hardcoded paper keys
+ALPACA_API_KEY = os.environ.get("ALPACA_API_KEY") or os.environ.get("APCA_API_KEY_ID") or "PKGP4XGJIJDPNBPULNAWJODBAP"
+ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("APCA_API_SECRET_KEY") or "FZ7g7rWBKriFVHTBKo3NhY4zNNgKUK18odrfgLRA3fWz"
+ALPACA_BASE_URL = os.environ.get("ALPACA_BASE_URL") or os.environ.get("APCA_API_BASE_URL") or "https://paper-api.alpaca.markets"
+
+os.environ["APCA_API_KEY_ID"] = ALPACA_API_KEY
+os.environ["APCA_API_SECRET_KEY"] = ALPACA_SECRET_KEY
+os.environ["APCA_API_BASE_URL"] = ALPACA_BASE_URL
+
+SIGNAL_FILE = Path(__file__).parent / "signal.json"
+
+import os
 if os.getenv('ALPACA_API_KEY') and not os.getenv('APCA_API_KEY_ID'):
     os.environ['APCA_API_KEY_ID'] = os.getenv('ALPACA_API_KEY')
 if os.getenv('ALPACA_SECRET_KEY') and not os.getenv('APCA_API_SECRET_KEY'):
@@ -22,10 +36,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-ALPACA_API_KEY = os.environ.get("APCA_API_KEY_ID", "")
-ALPACA_SECRET_KEY = os.environ.get("APCA_API_SECRET_KEY", "")
-ALPACA_BASE_URL = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
-SIGNAL_FILE = Path(__file__).parent / "signal.json"
 
 
 from alpaca_trade_api import REST  # noqa: E402

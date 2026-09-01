@@ -1,3 +1,5 @@
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 """
 bot_mcp.py — MCP server exposing Alpaca trading tools to Claude.
 """
@@ -301,4 +303,11 @@ if __name__ == "__main__":
 
 @app.get('/')
 def read_root():
-    return {'status': 'online', 'system': 'Apex Cyber', 'message': 'Trading Bot Active'}
+    if os.path.exists('dashboard/dist/index.html'):
+        return FileResponse('dashboard/dist/index.html')
+    return {'status': 'online', 'system': 'Apex Cyber', 'message': 'Dashboard not built yet'}
+
+
+# Mount static assets compiled by Vite
+if os.path.exists('dashboard/dist/assets'):
+    app.mount('/assets', StaticFiles(directory='dashboard/dist/assets'), name='assets')

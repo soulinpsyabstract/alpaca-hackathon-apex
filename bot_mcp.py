@@ -19,8 +19,18 @@ SIGNAL_FILE = Path(__file__).parent / "signal.json"
 
 
 from alpaca_trade_api import REST  # noqa: E402
+from alpaca.trading.client import TradingClient  # noqa: E402
+from alpaca.trading.requests import GetOptionContractsRequest, MarketOrderRequest  # noqa: E402
+from alpaca.trading.enums import ContractType, OrderSide, TimeInForce  # noqa: E402
 
 api = REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL)
+
+# Options trading is required by the hackathon rules across all 4 tracks, and
+# alpaca_trade_api (legacy REST above) has no options support at all -- no
+# get_option_contracts, no options order path. alpaca-py (TradingClient) is
+# Alpaca's current SDK and does support it, so it's used for options only,
+# alongside the legacy client for everything equities-related.
+trading_client = TradingClient(ALPACA_API_KEY, ALPACA_SECRET_KEY, paper=True)
 
 app = FastAPI(title="alpaca-mcp-bot")
 
@@ -144,6 +154,96 @@ def place_order(symbol: str, qty: float, side: str, stop_price: float = None):
         "type": order.type,
         "status": order.status,
         "stop_price": stop_price,
+    }
+
+
+@app.get("/tools/get_option_contracts")
+def get_option_contracts(
+    underlying_symbol: str,
+    option_type: str = None,
+    expiration_date: str = None,
+    strike_price_gte: float = None,
+    strike_price_lte: float = None,
+    limit: int = 50,
+):
+    """
+    Looks up tradable option contracts for an underlying symbol -- the OCC
+    symbol this returns (e.g. "AAPL240119C00100000") is what place_option_order
+    needs. option_type must be "call" or "put" if given. expiration_date is
+    "YYYY-MM-DD".
+
+    Example: /tools/get_option_contracts?underlying_symbol=SPY&option_type=call&strike_price_gte=550
+    """
+    contract_type = None
+    if option_type is not None:
+        option_type = option_type.lower()
+        if option_type not in ("call", "put"):
+            raise HTTPException(status_code=400, detail="option_type must be 'call' or 'put'")
+        contract_type = ContractType.CALL if option_type == "call" else ContractType.PUT
+
+    try:
+        request = GetOptionContractsRequest(
+            underlying_symbols=[underlying_symbol],
+            type=contract_type,
+            expiration_date=expiration_date,
+            strike_price_gte=str(strike_price_gte) if strike_price_gte is not None else None,
+            strike_price_lte=str(strike_price_lte) if strike_price_lte is not None else None,
+            limit=limit,
+        )
+        response = trading_client.get_option_contracts(request)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
+
+    return {
+        "contracts": [
+            {
+                "symbol": c.symbol,
+                "type": c.type.value if c.type else None,
+                "strike_price": float(c.strike_price) if c.strike_price is not None else None,
+                "expiration_date": str(c.expiration_date),
+                "tradable": c.tradable,
+                "open_interest": c.open_interest,
+            }
+            for c in response.option_contracts
+        ]
+    }
+
+
+@app.post("/tools/place_option_order")
+def place_option_order(symbol: str, qty: int, side: str):
+    """
+    Places a market order for an option contract by its OCC symbol (from
+    get_option_contracts). qty is number of contracts (integer, no fractional
+    contracts). side must be "buy" or "sell".
+
+    Example: POST /tools/place_option_order?symbol=AAPL240119C00100000&qty=1&side=buy
+    """
+    side = side.lower()
+    if side not in ("buy", "sell"):
+        raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
+
+    if qty <= 0:
+        raise HTTPException(status_code=400, detail="qty must be greater than 0")
+
+    order_request = MarketOrderRequest(
+        symbol=symbol,
+        qty=qty,
+        side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
+        time_in_force=TimeInForce.DAY,
+    )
+
+    try:
+        order = trading_client.submit_order(order_data=order_request)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Alpaca error: {exc}") from exc
+
+    return {
+        "order_id": str(order.id),
+        "symbol": order.symbol,
+        "qty": float(order.qty),
+        "side": order.side.value if hasattr(order.side, "value") else order.side,
+        "type": order.type.value if hasattr(order.type, "value") else order.type,
+        "status": order.status.value if hasattr(order.status, "value") else order.status,
     }
 
 

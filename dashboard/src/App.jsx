@@ -10,16 +10,16 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const accRes = await fetch('http://localhost:8000/tools/get_account');
+      const accRes = await fetch('https://apex-cypher.onrender.com/tools/get_account');
       const acc = await accRes.json();
       setAccount(acc);
 
-      const posRes = await fetch('http://localhost:8000/tools/get_positions');
+      const posRes = await fetch('https://apex-cypher.onrender.com/tools/get_positions');
       const pos = await posRes.json();
       const filtered = (pos.positions || []).filter(p => !closedSymbols.includes(p.symbol));
       setPositions(filtered);
 
-      const sigRes = await fetch('http://localhost:8000/tools/get_signal');
+      const sigRes = await fetch('https://apex-cypher.onrender.com/tools/get_signal');
       const sig = await sigRes.json();
       setSignal(sig);
     } catch (err) {
@@ -31,7 +31,7 @@ export default function Dashboard() {
     setClosedSymbols([...closedSymbols, symbol]);
     setPositions(positions.filter(p => p.symbol !== symbol));
     try {
-      const url = `http://localhost:8000/tools/place_order?symbol=${symbol}&qty=${qty}&side=sell`;
+      const url = `https://apex-cypher.onrender.com/tools/place_order?symbol=${symbol}&qty=${qty}&side=sell`;
       await fetch(url, { method: 'POST' });
       return;
     } catch (err) {
